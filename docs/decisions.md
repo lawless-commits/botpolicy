@@ -56,3 +56,15 @@ Limits of this check: GitHub repo search and the roadmap's list only; no npm or 
 - **With no arguments the CLI prints its version** until Phase 1 adds commands. Unknown flags already exit 2.
 - **Commits use the GitHub noreply address** so the owner's personal email is not in public history.
 - **Empty layout folders are not created** until a phase puts a file in them.
+
+## Before Phase 1 (Nov 14, 2026)
+
+The owner approved all five recommendations in `docs/plan.md`.
+
+1. **The fetcher is built in Phase 1**, with every safety rule, because the Phase 1 gate needs `botpolicy robots <url>`. Phase 2 adds the request budget and page fetches.
+2. **The address check is a constructor argument of the fetcher.** Tests pass one that allows the local test server's exact host and port. No CLI flag, environment variable or MCP input can set it.
+3. **A 5xx robots.txt is reported as not measured and exits 3.** The report adds that a crawler following RFC 9309 would treat the whole site as disallowed.
+4. **Probe requests are counted before any is sent.** Over the budget, the run exits 2 and says how to narrow crawlers or paths. Requests are never dropped silently.
+5. **Until 1.0 the Action builds the CLI from its own checkout.** At release it switches to a pinned `npx botpolicy@<version>`.
+
+Also approved with the plan: no probe through MCP in v1.
