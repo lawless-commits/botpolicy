@@ -15,7 +15,11 @@ export interface BuildInput {
   pages: Record<string, PageReport>;
   verdicts: Verdict[];
   extraFindings?: Finding[];
+  probed?: boolean;
 }
+
+export const PROBE_NOTE =
+  "The probe requests used each crawler's published user agent but came from this machine, not the crawler's own IP addresses. Large CDNs check real crawlers by IP address, so a refusal here does not prove the real crawler is refused, and being served here does not prove it is served.";
 
 function withEvidence(f: Finding): ReportFinding {
   const entry = EVIDENCE[f.check];
@@ -48,6 +52,7 @@ export function buildReport(input: BuildInput): Report {
     pages,
     verdicts: input.verdicts,
     findings,
+    ...(input.probed ? { probe: { enabled: true as const, simulated: true as const, note: PROBE_NOTE } } : {}),
   };
 }
 

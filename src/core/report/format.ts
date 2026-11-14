@@ -9,6 +9,10 @@ function decidedBy(v: Report["verdicts"][number]): string {
     if (v.robots.verdict === "not-measured") return "robots.txt not measured";
     return `robots.txt line ${v.robots.line}: ${v.robots.ruleText}${v.robots.managed ? ` [${v.robots.managed}]` : ""}`;
   }
+  if (v.decidedBy === "edge") {
+    const status = v.edge!.status !== null ? `HTTP ${v.edge!.status}` : "";
+    return `edge: ${[v.edge!.class === "challenged" ? "challenge" : "", status].filter(Boolean).join(", ")} (simulated)`;
+  }
   if (v.decidedBy === "page") return v.verdict === "not-measured" ? "page not measured" : `page: ${v.pageControls.join(", ")}`;
   return v.robots.line !== null ? `robots.txt line ${v.robots.line}: ${v.robots.ruleText}` : "";
 }
@@ -49,6 +53,7 @@ const HEAD = ["CRAWLER", "PURPOSE", "VERDICT", "DECIDED BY"];
 export function auditText(report: Report, bots: readonly BotRecord[]): string {
   const out = [`botpolicy ${report.tool.version}  ${report.target}  ${report.generatedAt}  (${report.requests} requests)`];
   const r = report.robots;
+  if (report.probe) out.push(`Probe: SIMULATED. ${report.probe.note}`);
   out.push(`robots.txt: ${r.status === "parsed" ? `HTTP ${r.httpStatus}` : r.status === "absent" ? `none (${r.httpStatus})` : "NOT MEASURED"}`);
   for (const page of report.pages) {
     out.push("", `Path ${page.path}  ${page.measured ? `HTTP ${page.status}, ${page.textLength} characters without JavaScript` : "NOT MEASURED"}`);
@@ -95,6 +100,7 @@ const cell = (s: string) => s.replace(/\|/g, "\\|");
 
 export function auditMarkdown(report: Report, bots: readonly BotRecord[]): string {
   const out = [`# botpolicy audit: ${report.target}`, "", `Version ${report.tool.version}, ${report.generatedAt}, ${report.requests} requests.`];
+  if (report.probe) out.push("", `> **Probe: simulated.** ${report.probe.note}`);
   for (const page of report.pages) {
     out.push("", `## \`${page.path}\``, "", page.measured ? `HTTP ${page.status}, ${page.textLength} characters of text without JavaScript.` : "**Not measured.**", "");
     out.push(`| ${HEAD.join(" | ")} |`, `| ${HEAD.map(() => "---").join(" | ")} |`);

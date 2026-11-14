@@ -14,6 +14,14 @@ inputs:
     description: Path to the policy file.
     required: false
     default: botpolicy.json
+  probe:
+    description: Also request each path as each crawler, one a second. Results are simulated. Only use it on a site you control.
+    required: false
+    default: "false"
+  bots:
+    description: Comma-separated crawlers to probe (with probe). Defaults to every crawler with a published user agent.
+    required: false
+    default: ""
 
 outputs:
   status:
@@ -41,14 +49,17 @@ runs:
       env:
         BOTPOLICY_URL: ${{ inputs.url }}
         BOTPOLICY_POLICY: ${{ inputs.policy }}
+        BOTPOLICY_PROBE: ${{ inputs.probe }}
+        BOTPOLICY_BOTS: ${{ inputs.bots }}
       run: |
         out="$RUNNER_TEMP/botpolicy-report.md"
+        args=(test)
+        if [ -n "$BOTPOLICY_URL" ]; then args+=("$BOTPOLICY_URL"); fi
+        args+=(--policy "$BOTPOLICY_POLICY" --format markdown --annotate)
+        if [ "$BOTPOLICY_PROBE" = "true" ]; then args+=(--probe); fi
+        if [ -n "$BOTPOLICY_BOTS" ]; then args+=(--bots "$BOTPOLICY_BOTS"); fi
         set +e
-        if [ -n "$BOTPOLICY_URL" ]; then
-          node "$GITHUB_ACTION_PATH/dist/cli.js" test "$BOTPOLICY_URL" --policy "$BOTPOLICY_POLICY" --format markdown --annotate > "$out"
-        else
-          node "$GITHUB_ACTION_PATH/dist/cli.js" test --policy "$BOTPOLICY_POLICY" --format markdown --annotate > "$out"
-        fi
+        node "$GITHUB_ACTION_PATH/dist/cli.js" "${args[@]}" > "$out"
         code=$?
         set -e
         grep -v '^::error' "$out" >> "$GITHUB_STEP_SUMMARY" || true

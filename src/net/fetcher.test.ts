@@ -157,6 +157,15 @@ describe("fetcher responses", () => {
     expect(hits[0]?.headers["user-agent"]).toBe("botpolicy-test");
   });
 
+  it("sends a per-request user agent when one is given, and counts it against the budget", async () => {
+    routes.set("/", (_, res) => res.end("ok"));
+    const fetcher = testFetcher();
+    await fetcher.fetch(`${base}/`, { userAgent: "Mozilla/5.0 (compatible; GPTBot/1.4)" });
+    await fetcher.fetch(`${base}/`);
+    expect(hits.map((h) => h.headers["user-agent"])).toEqual(["Mozilla/5.0 (compatible; GPTBot/1.4)", "botpolicy-test"]);
+    expect(fetcher.used()).toBe(2);
+  });
+
   it("returns non-2xx statuses as measured responses", async () => {
     routes.set("/err", (_, res) => res.writeHead(503).end("down"));
     expect(await testFetcher().fetch(`${base}/err`)).toMatchObject({ ok: true, status: 503 });

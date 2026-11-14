@@ -43,6 +43,8 @@ Options:
   --out <file>    Where init writes the policy (default botpolicy.json)
   --force         Let init overwrite an existing file
   --annotate      Print GitHub Actions error annotations for broken rules (test)
+  --probe         Also request each path as each crawler, one a second (simulated; audit, test)
+  --bots <list>   Comma-separated crawlers to probe (default: every crawler with a published user agent)
   -v, --version   Print the version
   -h, --help      Print this help
 `;
@@ -99,6 +101,8 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
         out: { type: "string" },
         force: { type: "boolean" },
         annotate: { type: "boolean" },
+        probe: { type: "boolean" },
+        bots: { type: "string" },
       },
       allowPositionals: true,
     });
@@ -108,6 +112,11 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
   const { values, positionals } = parsed;
   if (values.version) return { code: EXIT.ok, stdout: `${version()}\n`, stderr: "" };
   const [command, ...rest] = positionals;
+  const probeOptions = {
+    probe: !!values.probe,
+    probeBots: values.bots ? values.bots.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
+  };
+  if (values.bots && !values.probe) return bad("--bots only applies with --probe");
   if (values.help || command === undefined) return { code: EXIT.ok, stdout: USAGE, stderr: "" };
 
   switch (command) {
@@ -125,7 +134,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
       try {
         const report = await runAudit(rest[0]!, values.path ?? ["/"], {
           fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
-        }, { version: version() });
+        }, { version: version(), ...probeOptions });
         const stdout =
           format === "json" ? JSON.stringify(report, null, 2) + "\n" :
           format === "markdown" ? auditMarkdown(report, BOTS) : auditText(report, BOTS);
@@ -142,7 +151,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
       try {
         const report = await runTest(values.policy ?? "botpolicy.json", rest[0], {
           fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
-        }, { version: version() });
+        }, { version: version(), ...probeOptions });
         const status = report.policy!.status;
         const code = status === "fail" ? EXIT.policyBroken : status === "not-measured" ? EXIT.notMeasured : EXIT.ok;
         return { code, stdout: render(report, format) + (values.annotate ? annotations(report) : ""), stderr: "" };
