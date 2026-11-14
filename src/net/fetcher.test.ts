@@ -108,6 +108,38 @@ describe("fetcher address checks", () => {
   });
 });
 
+describe("fetcher address fallback", () => {
+  it("tries the next checked address when the first refuses the connection", async () => {
+    routes.set("/", (_, res) => res.end("second address"));
+    const fetcher = createFetcher({
+      userAgent: "t",
+      checkAddress: (ip, p) => (ip === "127.0.0.2" || ip === "127.0.0.1") && p === port,
+      resolve: async () => [
+        { address: "127.0.0.2", family: 4 },
+        { address: "127.0.0.1", family: 4 },
+      ],
+    });
+    const result = await fetcher.fetch(`http://multi.test:${port}/`);
+    expect(result).toMatchObject({ ok: true, body: "second address" });
+    expect(hits[0]?.headers.host).toBe(`multi.test:${port}`);
+    expect(fetcher.used()).toBe(1);
+  });
+
+  it("never falls back to an address that failed the check", async () => {
+    routes.set("/", (_, res) => res.end("should not be reached"));
+    const fetcher = createFetcher({
+      userAgent: "t",
+      checkAddress: (ip, p) => ip === "127.0.0.2" && p === port,
+      resolve: async () => [
+        { address: "127.0.0.2", family: 4 },
+        { address: "127.0.0.1", family: 4 },
+      ],
+    });
+    expect(await fetcher.fetch(`http://multi.test:${port}/`)).toMatchObject({ ok: false, error: "refused-address" });
+    expect(hits).toHaveLength(0);
+  });
+});
+
 describe("fetcher responses", () => {
   it("returns status, headers and body, and sends its user agent", async () => {
     routes.set("/robots.txt", (_, res) =>
