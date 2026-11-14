@@ -1,0 +1,93 @@
+{
+  "$id": "https://unpkg.com/botpolicy/schema/policy.json",
+  "title": "botpolicy policy file",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "site": {
+      "type": "string",
+      "format": "uri"
+    },
+    "paths": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "starts_with",
+        "pattern": "^\\/.*"
+      }
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "bots": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "paths": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "starts_with",
+              "pattern": "^\\/.*"
+            }
+          },
+          "expect": {
+            "type": "string",
+            "enum": [
+              "allowed",
+              "blocked",
+              "restricted",
+              "reachable"
+            ]
+          }
+        },
+        "required": [
+          "bots",
+          "expect"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "page": {
+      "type": "object",
+      "properties": {
+        "minTextWithoutJs": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "requireJsonLd": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "site",
+    "paths",
+    "rules"
+  ],
+  "additionalProperties": false
+}

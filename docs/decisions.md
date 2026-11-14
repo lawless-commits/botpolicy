@@ -128,3 +128,17 @@ Recommended by Claude and accepted by the owner's standing instruction.
 - **The audit plans its requests before sending:** robots.txt, each path, the first sitemap and `/llms.txt`. If that is over budget it exits 2 before any request. A sitemap that only hits the 2 MB cap counts as reachable.
 - **The audit exits 3 if any verdict is not measured.**
 - **The fixture server is plain JavaScript** in `fixtures/server.mjs`, with a type declaration, so it stays out of the package build. `{{origin}}` in fixture files becomes the server's own address.
+
+## Phase 3, policy, test, init and the Action (Nov 14, 2026)
+
+Recommended by Claude and accepted by the owner's standing instruction.
+
+- **Policy shape:** the roadmap's draft, made strict: unknown keys, unknown crawlers, unknown purposes and paths without a leading `/` are rejected with readable messages (exit 2). `bots` is `"*"`, `"purpose:<p>"`, `"operator:<o>"` or a list of tokens.
+- **The last matching rule wins**, so a file lists general rules first and exceptions after, as in `.gitignore`. A rule's `paths` default to the policy's `paths`, and any path a rule names is added to the audit.
+- **`expect` takes four values:** `allowed`, `blocked`, `restricted`, or `reachable` (allowed or restricted). `allowed` is strict: a noindexed page does not count as allowed.
+- **Not measured never passes.** Exit codes: 1 if anything is broken, even when something else was not measured; otherwise 3 if anything was not measured; otherwise 0.
+- **`page` requirements** (`minTextWithoutJs`, `requireJsonLd`) apply to the policy's own paths. `minTextWithoutJs` also sets the P4 threshold for that run.
+- **`init` writes one rule per purpose where the purpose is uniform**, and splits into token or path rules where it is not. It adds `minTextWithoutJs: 500` only when every page already meets it. It refuses to overwrite without `--force` and writes nothing if anything was not measured.
+- **The report gains an optional `policy` section.** This is an addition, so it stays at schema version 1. `schema/policy.json` is generated beside `schema/report.json`, and both are test-guarded.
+- **The Action is composite.** It builds from its own checkout (decision 5), passes inputs through environment variables (no injection), writes Markdown to the job summary, prints `::error` annotations for broken rules, exposes `status`, and exits with the CLI's code. It runs `actions/setup-node` with Node 22, which also sets the Node version for later steps in the job; this is noted for the README.
+- **Examples** are in `fixtures/policies/`: search in and training out, open and readable with page requirements, and path exceptions.

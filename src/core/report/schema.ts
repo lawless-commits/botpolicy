@@ -64,6 +64,30 @@ const RobotsSchema = z.object({
   ),
 });
 
+const PolicyResultSchema = z.object({
+  file: z.string(),
+  status: z.enum(["pass", "fail", "not-measured"]),
+  checks: z.array(
+    z.object({
+      token: z.string(),
+      path: z.string(),
+      rule: z.number().int(),
+      expected: z.enum(["allowed", "blocked", "restricted", "reachable"]),
+      actual: z.enum(["allowed", "blocked", "restricted", "not-measured"]),
+      ok: z.boolean().nullable(),
+      reason: z.string(),
+    }),
+  ),
+  pageChecks: z.array(
+    z.object({
+      path: z.string(),
+      requirement: z.enum(["minTextWithoutJs", "requireJsonLd"]),
+      ok: z.boolean().nullable(),
+      reason: z.string(),
+    }),
+  ),
+});
+
 export const ReportSchema = z.object({
   schemaVersion: z.literal(SCHEMA_VERSION),
   tool: z.object({ name: z.literal("botpolicy"), version: z.string() }),
@@ -74,6 +98,8 @@ export const ReportSchema = z.object({
   pages: z.array(PageSchema),
   verdicts: z.array(VerdictSchema),
   findings: z.array(FindingSchema),
+  /** Present when the run checked a policy file (botpolicy test). */
+  policy: PolicyResultSchema.optional(),
 });
 
 export type Report = z.infer<typeof ReportSchema>;
