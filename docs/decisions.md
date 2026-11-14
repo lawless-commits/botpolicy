@@ -155,3 +155,16 @@ Recommended by Claude and accepted by the owner's standing instruction. The owne
 - **Manners:** one probe request a second. Requests are counted before any is sent, and an over-budget plan exits 2 with "Probe fewer crawlers with --bots, or check fewer paths". `--bots` applies only with `--probe`. A default probe of one path is 18 requests at most.
 - **Schema:** `decidedBy` gains `"edge"`, and verdicts gain `edge`. The report gains `probe`. Pre-1.0, so it stays at version 1.
 - **The Action** gains `probe` and `bots` inputs, off by default.
+
+## Phase 5, the MCP server (Nov 14, 2026)
+
+The SDK docs were read on Nov 14, 2026 (README, the v2 migration guide, the tools, stdio and testing pages), and the code was checked against the installed type definitions.
+
+- **SDK: `@modelcontextprotocol/server` 2.4.0** (Oct 23, 2026). It depends only on `zod` and `@modelcontextprotocol/core`; the v1 `sdk` package has 17 dependencies. `@modelcontextprotocol/client` 2.4.0 is a dev dependency for tests.
+- **`serveStdio(factory)`** rather than `server.connect(new StdioServerTransport())`. The current docs recommend it because it serves both the 2025 and the 2026 protocol versions; the README still shows the older form.
+- **Five tools, all `readOnlyHint: true, destructiveHint: false`.** `audit_site` and `check_policy` return the report with `outputSchema: ReportSchema` and `structuredContent`; a test checks they equal the CLI's `--json` output. `explain_verdict` returns the verdict, the operator record, the relevant findings and a one-line explanation. `list_bots` returns the registry. `draft_robots_rules` returns text only.
+- **`check_policy` takes the policy inline**, not as a file path, so the server never reads local files on a model's request.
+- **No probe through MCP**, as approved. Extra arguments such as `probe: true` are ignored, and a test confirms only the tool's own user agent is sent.
+- **A fresh fetcher for each tool call**, so each call gets its own 40-request budget and the address checks. A test confirms a private address is refused through MCP.
+- **Path checks use `regex(/^\//)` rather than `startsWith`**, because zod writes `startsWith` as the non-standard JSON Schema format `starts_with`. The Inspector run showed it.
+- **`version()` and `userAgent()` moved to `src/version.ts`**, so the CLI and the MCP server don't import each other.

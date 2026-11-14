@@ -30,7 +30,7 @@ export interface PolicyResult {
   pageChecks: PageCheck[];
 }
 
-export function selects(rule: PolicyRule, bot: BotRecord): boolean {
+export function selects(rule: Pick<PolicyRule, "bots">, bot: BotRecord): boolean {
   const { bots } = rule;
   if (bots === "*") return true;
   if (Array.isArray(bots)) return bots.some((t) => t.toLowerCase() === bot.token.toLowerCase());
@@ -44,7 +44,8 @@ function holds(expected: PolicyRule["expect"], actual: string): boolean {
   return expected === actual;
 }
 
-function describe(v: Report["verdicts"][number]): string {
+/** What decided a verdict, in words, e.g. "robots.txt line 2: Disallow: /". */
+export function describeVerdict(v: Report["verdicts"][number]): string {
   if (v.decidedBy === "robots" && v.robots.line !== null) {
     return `robots.txt line ${v.robots.line}: ${v.robots.ruleText}${v.robots.managed ? ` [${v.robots.managed}]` : ""}`;
   }
@@ -68,7 +69,7 @@ export function evaluatePolicy(policy: Policy, report: Pick<Report, "verdicts" |
     if (ruleIndex === -1) continue;
     const expected = policy.rules[ruleIndex]!.expect;
     const ok = v.verdict === "not-measured" ? null : holds(expected, v.verdict);
-    const because = describe(v);
+    const because = describeVerdict(v);
     checks.push({
       token: v.token, path: v.path, rule: ruleIndex, expected, actual: v.verdict, ok,
       reason:
