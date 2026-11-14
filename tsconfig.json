@@ -9,6 +9,7 @@
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "rootDir": "src",
     "outDir": "dist"
   },
