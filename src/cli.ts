@@ -1,14 +1,15 @@
 #!/usr/bin/env node
-import { readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { BOTS } from "./core/registry.js";
 import { notMeasured } from "./core/report/build.js";
-import { auditMarkdown, auditText } from "./core/report/format.js";
+import { annotations, auditMarkdown, auditText } from "./core/report/format.js";
+import type { Report } from "./core/report/schema.js";
 import { robotsText } from "./core/report/robots-text.js";
 import type { BotRecord } from "./core/types.js";
 import { createFetcher, type Fetcher } from "./net/fetcher.js";
-import { InputError, runAudit, runRobots } from "./runner.js";
+import { InputError, runAudit, runInit, runRobots, runTest } from "./runner.js";
 
 export interface CliResult {
   code: number;
@@ -29,6 +30,8 @@ const USAGE = `Usage: botpolicy <command> [options]
 
 Commands:
   audit <url>            What each crawler can reach: robots.txt and page checks
+  test [url]             Check the site (or another URL, such as a preview) against botpolicy.json
+  init <url>             Write botpolicy.json from what the site does today
   robots <url or file>   robots.txt verdicts per crawler, with the deciding line
   bots                   List the crawler registry with sources
 
@@ -36,6 +39,10 @@ Options:
   --path <path>   Path to check (repeatable; default "/")
   --format <f>    text, markdown or json (audit; default text)
   --json          Machine-readable output (same as --format json)
+  --policy <file> Policy file for test (default botpolicy.json)
+  --out <file>    Where init writes the policy (default botpolicy.json)
+  --force         Let init overwrite an existing file
+  --annotate      Print GitHub Actions error annotations for broken rules (test)
   -v, --version   Print the version
   -h, --help      Print this help
 `;
@@ -66,6 +73,14 @@ export function userAgent(): string {
 
 export interface CliDeps {
   fetcher?: Fetcher;
+  /** Writes the policy file for init; replaced in tests. */
+  writeFile?: (path: string, text: string) => void;
+  exists?: (path: string) => boolean;
+}
+
+function render(report: Report, format: string): string {
+  if (format === "json") return JSON.stringify(report, null, 2) + "\n";
+  return format === "markdown" ? auditMarkdown(report, BOTS) : auditText(report, BOTS);
 }
 
 /** Runs the CLI on the given arguments without touching the process. */
@@ -80,6 +95,10 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
         json: { type: "boolean" },
         path: { type: "string", multiple: true },
         format: { type: "string" },
+        policy: { type: "string" },
+        out: { type: "string" },
+        force: { type: "boolean" },
+        annotate: { type: "boolean" },
       },
       allowPositionals: true,
     });
@@ -111,6 +130,41 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
           format === "json" ? JSON.stringify(report, null, 2) + "\n" :
           format === "markdown" ? auditMarkdown(report, BOTS) : auditText(report, BOTS);
         return { code: notMeasured(report) ? EXIT.notMeasured : EXIT.ok, stdout, stderr: "" };
+      } catch (error) {
+        if (error instanceof InputError) return bad(error.message);
+        throw error;
+      }
+    }
+    case "test": {
+      if (rest.length > 1) return bad("test takes at most one URL");
+      const format = values.json ? "json" : (values.format ?? "text");
+      if (!["text", "markdown", "json"].includes(format)) return bad(`unknown format '${format}'`);
+      try {
+        const report = await runTest(values.policy ?? "botpolicy.json", rest[0], {
+          fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
+        }, { version: version() });
+        const status = report.policy!.status;
+        const code = status === "fail" ? EXIT.policyBroken : status === "not-measured" ? EXIT.notMeasured : EXIT.ok;
+        return { code, stdout: render(report, format) + (values.annotate ? annotations(report) : ""), stderr: "" };
+      } catch (error) {
+        if (error instanceof InputError) return bad(error.message);
+        throw error;
+      }
+    }
+    case "init": {
+      if (rest.length !== 1) return bad("init takes one URL");
+      const out = values.out ?? "botpolicy.json";
+      const exists = deps.exists ?? existsSync;
+      if (exists(out) && !values.force) return bad(`${out} already exists; pass --force to overwrite it`);
+      try {
+        const { report, policy } = await runInit(rest[0]!, values.path ?? ["/"], {
+          fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
+        }, { version: version() });
+        if (!policy) {
+          return { code: EXIT.notMeasured, stdout: auditText(report, BOTS), stderr: `botpolicy: not everything could be measured, so no policy was written.\n` };
+        }
+        (deps.writeFile ?? ((p, t) => writeFileSync(p, t)))(out, JSON.stringify(policy, null, 2) + "\n");
+        return { code: EXIT.ok, stdout: `Wrote ${out} with ${policy.rules.length} rules from what ${policy.site} does today. Review it, then run botpolicy test.\n`, stderr: "" };
       } catch (error) {
         if (error instanceof InputError) return bad(error.message);
         throw error;

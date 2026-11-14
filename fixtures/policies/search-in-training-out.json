@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/botpolicy/schema/policy.json",
+  "site": "https://example.com",
+  "paths": ["/"],
+  "rules": [
+    { "bots": "purpose:search", "expect": "allowed" },
+    { "bots": "purpose:user-fetch", "expect": "allowed" },
+    { "bots": "purpose:training", "expect": "blocked" }
+  ]
+}
