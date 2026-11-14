@@ -3,7 +3,10 @@ import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { BOTS } from "./core/registry.js";
+import { robotsText } from "./core/report/robots-text.js";
 import type { BotRecord } from "./core/types.js";
+import { createFetcher, type Fetcher } from "./net/fetcher.js";
+import { InputError, runRobots } from "./runner.js";
 
 export interface CliResult {
   code: number;
@@ -23,10 +26,12 @@ export function version(): string {
 const USAGE = `Usage: botpolicy <command> [options]
 
 Commands:
-  bots            List the crawler registry with sources
+  robots <url or file>   robots.txt verdicts per crawler, with the deciding line
+  bots                   List the crawler registry with sources
 
 Options:
-  --json          Machine-readable output (bots)
+  --path <path>   Path to check (repeatable; default "/") (robots)
+  --json          Machine-readable output
   -v, --version   Print the version
   -h, --help      Print this help
 `;
@@ -51,8 +56,16 @@ function formatBots(bots: readonly BotRecord[]): string {
   return [line(head), ...rows.map(line)].join("\n") + "\n";
 }
 
+export function userAgent(): string {
+  return `botpolicy/${version()} (+https://github.com/lawless-commits/botpolicy)`;
+}
+
+export interface CliDeps {
+  fetcher?: Fetcher;
+}
+
 /** Runs the CLI on the given arguments without touching the process. */
-export function run(argv: string[]): CliResult {
+export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult> {
   let parsed;
   try {
     parsed = parseArgs({
@@ -61,6 +74,7 @@ export function run(argv: string[]): CliResult {
         version: { type: "boolean", short: "v" },
         help: { type: "boolean", short: "h" },
         json: { type: "boolean" },
+        path: { type: "string", multiple: true },
       },
       allowPositionals: true,
     });
@@ -80,6 +94,23 @@ export function run(argv: string[]): CliResult {
         stdout: values.json ? JSON.stringify(BOTS, null, 2) + "\n" : formatBots(BOTS),
         stderr: "",
       };
+    case "robots": {
+      if (rest.length !== 1) return bad("robots takes one URL or file");
+      const paths = values.path ?? ["/"];
+      try {
+        const report = await runRobots(rest[0]!, paths, {
+          fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
+        });
+        return {
+          code: report.status === "not-measured" ? EXIT.notMeasured : EXIT.ok,
+          stdout: values.json ? JSON.stringify(report, null, 2) + "\n" : robotsText(report, BOTS),
+          stderr: "",
+        };
+      } catch (error) {
+        if (error instanceof InputError) return bad(error.message);
+        throw error;
+      }
+    }
     default:
       return bad(`unknown command '${command}'. Run botpolicy --help.`);
   }
@@ -87,8 +118,15 @@ export function run(argv: string[]): CliResult {
 
 const entry = process.argv[1];
 if (entry && realpathSync(entry) === fileURLToPath(import.meta.url)) {
-  const result = run(process.argv.slice(2));
-  process.stdout.write(result.stdout);
-  process.stderr.write(result.stderr);
-  process.exitCode = result.code;
+  run(process.argv.slice(2)).then(
+    (result) => {
+      process.stdout.write(result.stdout);
+      process.stderr.write(result.stderr);
+      process.exitCode = result.code;
+    },
+    (error: unknown) => {
+      process.stderr.write(`botpolicy: unexpected error: ${error instanceof Error ? error.stack : String(error)}\n`);
+      process.exitCode = 2;
+    },
+  );
 }

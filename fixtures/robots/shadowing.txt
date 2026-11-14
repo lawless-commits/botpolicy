@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /cart/
+Disallow: /search*
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Disallow: /cart/
