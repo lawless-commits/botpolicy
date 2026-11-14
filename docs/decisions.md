@@ -104,3 +104,13 @@ Approved by the owner.
 - **P4 default threshold: 500 characters**, the figure in the roadmap's example policy. A policy file can change it.
 - **Pages are decoded as UTF-8.** Other charsets are a known limit for now.
 - The analyser records what each page says. Deciding what that means for each crawler's verdict is the combiner's job, in the next slice.
+
+## Phase 2, evidence (Nov 14, 2026)
+
+Every source was read on Nov 14, 2026.
+
+- **P4 is "measured"**, not "to confirm". Source: the Vercel and MERJ server-log study (Dec 2024), which found that none of the major AI crawlers render JavaScript. The data is from 2024, so the level should be rechecked after launch.
+- **E1 rests on secondary coverage** (PPC Land) of a vendor study made from datacenter IPs. The launch post must quote the original, as the roadmap says.
+- **Google honours only `googlebot` and `googlebot-news` as meta tag names.** Apple and Amazon document their own page controls. A meta tag naming any other crawler is recorded but must carry no weight in a verdict.
+- **R4 and I1 are unproven** and carry no weight. `carriesWeight()` is the single place that decides this.
+- A test scans the source for every `check: "X1"` and fails if one has no evidence entry.
