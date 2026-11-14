@@ -23,7 +23,7 @@ const VerdictSchema = z.object({
   token: z.string(),
   path: z.string(),
   verdict: z.enum(["allowed", "blocked", "restricted", "not-measured"]),
-  decidedBy: z.enum(["robots", "page", "none"]),
+  decidedBy: z.enum(["robots", "edge", "page", "none"]),
   robots: z.object({
     verdict: z.enum(["allowed", "blocked", "not-measured"]),
     line: z.number().int().nullable(),
@@ -31,6 +31,15 @@ const VerdictSchema = z.object({
     managed: z.string().nullable(),
   }),
   pageControls: z.array(z.string()),
+  /** The probe result; null when not probed. Always simulated. */
+  edge: z
+    .object({
+      class: z.enum(["served", "denied", "challenged", "different", "not-measured"]),
+      status: z.number().int().nullable(),
+      reason: z.string(),
+      simulated: z.literal(true),
+    })
+    .nullable(),
   notes: z.array(z.string()),
 });
 
@@ -98,6 +107,8 @@ export const ReportSchema = z.object({
   pages: z.array(PageSchema),
   verdicts: z.array(VerdictSchema),
   findings: z.array(FindingSchema),
+  /** Present when the run used --probe. */
+  probe: z.object({ enabled: z.literal(true), simulated: z.literal(true), note: z.string() }).optional(),
   /** Present when the run checked a policy file (botpolicy test). */
   policy: PolicyResultSchema.optional(),
 });

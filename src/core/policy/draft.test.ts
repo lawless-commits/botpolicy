@@ -7,7 +7,7 @@ import { parsePolicy } from "./schema.js";
 
 type V = Report["verdicts"][number];
 const v = (token: string, path: string, verdict: V["verdict"]): V => ({
-  token, path, verdict, decidedBy: "none", robots: { verdict: "allowed", line: null, ruleText: null, managed: null }, pageControls: [], notes: [],
+  token, path, verdict, decidedBy: "none", robots: { verdict: "allowed", line: null, ruleText: null, managed: null }, pageControls: [], edge: null, notes: [],
 });
 const page = (path: string, textLength: number) => ({
   path, url: "u", finalUrl: "u", status: 200, measured: true, isHtml: true, redirects: [], directives: [],
