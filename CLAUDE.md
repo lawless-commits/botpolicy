@@ -9,7 +9,12 @@ TypeScript, Node 22 or newer, pnpm, Vitest, ESLint, GitHub Actions. Build with p
 Runtime dependencies: the MCP TypeScript SDK, zod, one HTML parser. CLI flags use `node:util`.
 
 ## Commands
-To be filled in during Phase 0: dev, build, lint, typecheck, test, pack.
+- `pnpm dev`: compile in watch mode
+- `pnpm build`: compile `src/` to `dist/`
+- `pnpm lint`: ESLint
+- `pnpm typecheck`: `tsc --noEmit`, tests included
+- `pnpm test`: Vitest, one run
+- `pnpm run pack`: build, then write `botpolicy-<version>.tgz` (plain `pnpm pack` skips the build)
 
 ## Layout
 - `src/core/`: pure functions with no network or disk access (`robots/`, `page/`, `probe/`, `policy/`, `report/`, `types.ts`)
