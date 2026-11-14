@@ -68,3 +68,17 @@ The owner approved all five recommendations in `docs/plan.md`.
 5. **Until 1.0 the Action builds the CLI from its own checkout.** At release it switches to a pinned `npx botpolicy@<version>`.
 
 Also approved with the plan: no probe through MCP in v1.
+
+## Phase 1, slice 1: crawler registry (Nov 14, 2026)
+
+Approved by the owner.
+
+- **20 records: 19 verified, 1 unverified.** Each verified record was read on the operator's own page on Nov 14, 2026. Bingbot is listed as unverified because Bing's help page renders only in a browser.
+- **Bytespider is left out** until an operator page is found.
+- **Two fields added to the roadmap's `BotRecord`.** `isCrawler` is false for Google-Extended and Applebot-Extended, which are robots.txt controls and send no requests; the probe must never use them. `obeysRobotsQuote` keeps the operator's sentence.
+- **`obeysRobots` is "unstated" unless the operator says it for that crawler or for all its crawlers.** OpenAI, Perplexity (for PerplexityBot), Common Crawl and Meta (for Meta-ExternalAgent) only explain how to block, so they are "unstated".
+- **Dual-purpose crawlers get one purpose and a note.** Applebot is `search` (Apple says its data may also train models). Amazonbot and Meta-ExternalAgent are `training` (both also serve their products).
+- **User-agent strings are copied exactly as published**, including placeholders such as `Chrome/W.X.Y.Z` and Meta's relative link. Anthropic publishes no full strings, so its three records have none. The probe will decide in Phase 4 how to handle placeholders and missing strings; it will not invent strings.
+- **Amzn-SearchBot inherits other search crawlers' rules when not named**, per Amazon. A plain RFC 9309 reading gives it the `*` group. The robots engine must account for this, or report the difference.
+- **R4 (retired tokens) is unproven.** Anthropic's page does not mention `anthropic-ai` or `Claude-Web`. It stays in the catalogue with no weight until a source is found.
+- **New preference signals are out of v1.** Anthropic says it honours an AI-training preference signal from Oct 30, 2026, and Google plans `__usage_ai-training` in early 2027. Revisit after launch.
