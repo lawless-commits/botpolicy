@@ -168,3 +168,14 @@ The SDK docs were read on Nov 14, 2026 (README, the v2 migration guide, the tool
 - **A fresh fetcher for each tool call**, so each call gets its own 40-request budget and the address checks. A test confirms a private address is refused through MCP.
 - **Path checks use `regex(/^\//)` rather than `startsWith`**, because zod writes `startsWith` as the non-standard JSON Schema format `starts_with`. The Inspector run showed it.
 - **`version()` and `userAgent()` moved to `src/version.ts`**, so the CLI and the MCP server don't import each other.
+
+## Phase 6 preparation (Nov 14, 2026)
+
+Prepared while the Phase 3 to 5 gates wait on the owner. Nothing has been published.
+
+- **`server.json`** follows the registry's 2025-12-11 schema: `io.github.lawless-commits/botpolicy`, npm, stdio, with `mcp` as a positional package argument. **`mcpName`** in package.json matches it. Both stay at version 0.0.0 until release.
+- **The release workflow runs only on a `v*` tag push**, which only the owner does. It checks that the tag, package.json and server.json agree, runs all checks, publishes to npm with trusted publishing and provenance, then publishes to the MCP Registry via GitHub OIDC with `mcp-publisher` v1.8.7 (Oct 30, 2026; the asset name was checked on the release). It runs in a `release` environment, so the owner can require a manual approval.
+- **README:** leads with the policy file checked across the whole stack, as the wedge check recommended. The sample output is real output from the demo site with a broken robots.txt. It says plainly that the package is not on npm yet.
+- **`docs/checks.md`** is written from `evidence.json`, and a test checks that every check has a section with its level and source.
+- **Drafts in `docs/launch/`:** release notes and a launch post. The post leaves blanks for the survey and flags the HasData figure, which must be checked against the original report before posting.
+- **`exports`** points the library entry at `dist/runner.js`.

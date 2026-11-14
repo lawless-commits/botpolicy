@@ -1,0 +1,50 @@
+# Publishes to npm and the MCP Registry when the owner pushes a version tag.
+# Nothing here runs on pull requests or pushes to main. Before the first run the owner
+# sets up npm trusted publishing for this repo and workflow on npmjs.com.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm trusted publishing with provenance, and MCP Registry OIDC
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release # add required reviewers on this environment for a final manual approval
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      - name: Check that the tag, package.json and server.json agree
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          srv="$(node -p "require('./server.json').version")"
+          srvpkg="$(node -p "require('./server.json').packages[0].version")"
+          echo "tag=$tag package=$pkg server=$srv server-package=$srvpkg"
+          test "$tag" = "$pkg" && test "$tag" = "$srv" && test "$tag" = "$srvpkg"
+
+      - name: Publish to npm (trusted publishing)
+        run: npm publish --provenance --access public
+
+      - name: Publish to the MCP Registry
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.7
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
