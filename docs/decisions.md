@@ -93,3 +93,14 @@ Approved by the owner.
 - **R6** names the crawlers a CDN-managed block *blocks* (its `Allow: /` decides many verdicts too, which is not news) and lists each `Content-Signal` line.
 - **Amzn-SearchBot** keeps the plain RFC 9309 verdict plus a note on Amazon's different reading.
 - **Text formatting lives in `src/core/report/`** as a pure function, as the layout says.
+
+## Phase 2, page analyser (Nov 14, 2026)
+
+- **HTML parser: parse5 8.0.1.** It follows the WHATWG parsing standard, so tags land where a browser puts them, and it has one dependency (`entities`). htmlparser2 has four, node-html-parser two, linkedom five. 8.1.x was under two weeks old, so the older release is pinned in the lockfile.
+- **HTML is parsed with scripting off**, so `<noscript>` content counts as text a crawler without JavaScript can read.
+- **X-Robots-Tag scoping.** A name before a colon scopes the directives that follow, until the next name, unless the name is a directive that takes a value (`max-snippet`, `max-image-preview`, `max-video-preview`, `unavailable_after`). Known limit: Node joins repeated headers with ", ", so `googlebot: noindex` followed by a second header `nofollow` reads as both scoped to googlebot. Revisit if a real site shows it.
+- **Crawler-named meta tags** (`<meta name="googlebot">`) count only for crawler names in the registry.
+- **max-snippet:** the tightest limit wins; -1 (no limit) only when every value is -1.
+- **P4 default threshold: 500 characters**, the figure in the roadmap's example policy. A policy file can change it.
+- **Pages are decoded as UTF-8.** Other charsets are a known limit for now.
+- The analyser records what each page says. Deciding what that means for each crawler's verdict is the combiner's job, in the next slice.
