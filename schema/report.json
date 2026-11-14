@@ -297,6 +297,7 @@
             "type": "string",
             "enum": [
               "robots",
+              "edge",
               "page",
               "none"
             ]
@@ -351,6 +352,54 @@
               "type": "string"
             }
           },
+          "edge": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "class": {
+                    "type": "string",
+                    "enum": [
+                      "served",
+                      "denied",
+                      "challenged",
+                      "different",
+                      "not-measured"
+                    ]
+                  },
+                  "status": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string"
+                  },
+                  "simulated": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "class",
+                  "status",
+                  "reason",
+                  "simulated"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "notes": {
             "type": "array",
             "items": {
@@ -365,6 +414,7 @@
           "decidedBy",
           "robots",
           "pageControls",
+          "edge",
           "notes"
         ],
         "additionalProperties": false
@@ -451,6 +501,28 @@
         ],
         "additionalProperties": false
       }
+    },
+    "probe": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "const": true
+        },
+        "simulated": {
+          "type": "boolean",
+          "const": true
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "enabled",
+        "simulated",
+        "note"
+      ],
+      "additionalProperties": false
     },
     "policy": {
       "type": "object",

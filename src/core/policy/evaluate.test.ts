@@ -8,7 +8,7 @@ type V = Report["verdicts"][number];
 const verdict = (token: string, path: string, value: V["verdict"], line: number | null = null): V => ({
   token, path, verdict: value, decidedBy: value === "blocked" ? "robots" : value === "restricted" ? "page" : "none",
   robots: { verdict: value === "blocked" ? "blocked" : "allowed", line, ruleText: line ? "Disallow: /" : null, managed: null },
-  pageControls: value === "restricted" ? ["noindex"] : [], notes: [],
+  pageControls: value === "restricted" ? ["noindex"] : [], edge: null, notes: [],
 });
 const report = (verdicts: V[], pages: Partial<Report["pages"][number]>[] = []): Pick<Report, "verdicts" | "pages"> => ({
   verdicts,
