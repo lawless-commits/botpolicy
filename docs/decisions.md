@@ -179,3 +179,12 @@ Prepared while the Phase 3 to 5 gates wait on the owner. Nothing has been publis
 - **`docs/checks.md`** is written from `evidence.json`, and a test checks that every check has a section with its level and source.
 - **Drafts in `docs/launch/`:** release notes and a launch post. The post leaves blanks for the survey and flags the HasData figure, which must be checked against the original report before posting.
 - **`exports`** points the library entry at `dist/runner.js`.
+
+## Phase 6b, survey script (Nov 14, 2026)
+
+Built but **not run**: running it probes sites the owner does not control, and waits for the owner's site list and go-ahead.
+
+- `node dist/scripts/survey.js <sites.txt> <out-dir>` audits `/` on each site and probes six crawlers: GPTBot, OAI-SearchBot, PerplexityBot, CCBot, Meta-ExternalAgent and Amazonbot. Those are the training and search crawlers whose operators publish user agents.
+- **10 requests per site at most**, one probe a second, and a user agent that ends in "survey" and links to the repo. Sites run one after another.
+- **It writes only `<out-dir>/<host>.json` per site and `<out-dir>/summary.md`.** The table is computed by a pure function, so the same raw files always give the same table.
+- **The table counts two contradictions per crawler:** robots.txt blocks it but the site serves it, and robots.txt allows it but the site refuses or challenges it. Not-measured results are left out. Every figure is labelled simulated.
