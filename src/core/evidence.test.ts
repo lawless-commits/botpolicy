@@ -45,3 +45,14 @@ describe("evidence", () => {
     expect(carriesWeight("Z9")).toBe(false);
   });
 });
+
+describe("docs/checks.md", () => {
+  const doc = readFileSync(new URL("../../docs/checks.md", import.meta.url), "utf8");
+  it.each(CATALOGUE)("documents %s with its level and source", (id) => {
+    const entry = EVIDENCE[id]!;
+    const section = doc.split(/^## /m).find((s) => s.startsWith(`${id}:`));
+    expect(section, `${id} has no section`).toBeDefined();
+    expect(section).toContain(`**Evidence: ${entry.level}.**`);
+    expect(section).toContain(entry.source);
+  });
+});
