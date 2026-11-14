@@ -82,3 +82,14 @@ Approved by the owner.
 - **Amzn-SearchBot inherits other search crawlers' rules when not named**, per Amazon. A plain RFC 9309 reading gives it the `*` group. The robots engine must account for this, or report the difference.
 - **R4 (retired tokens) is unproven.** Anthropic's page does not mention `anthropic-ai` or `Claude-Web`. It stays in the catalogue with no weight until a source is found.
 - **New preference signals are out of v1.** Anthropic says it honours an AI-training preference signal from Oct 30, 2026, and Google plans `__usage_ai-training` in early 2027. Revisit after launch.
+
+## Phase 1, robots checks (Nov 14, 2026)
+
+Approved by the owner.
+
+- **R1 status handling.** 2xx is parsed. 4xx is **measured** as "no robots.txt": every crawler is allowed, because the server answered that there is no file. 401 and 403 add a warning that a CDN may be refusing us. A 5xx, an unfinished 1xx or 3xx, or an unreachable file is **not measured** and exits 3; for a 5xx the report adds that a crawler following RFC 9309 would treat the site as closed. A 200 that serves HTML gets a warning and is parsed as an empty file.
+- **R3** names each group that replaces `*` and lists the `*` disallows it loses. It probes each lost rule at the literal part of its pattern, before the first `*`.
+- **R5 fires only for site-wide `*` blocks** (`Disallow: /` or `/*`). Blocking an area such as `/admin/` for everyone is a normal choice, and the first version warned about it on every search crawler. The other case, a search crawler blocked by name while its training sibling is allowed, fires on any path. Each crawler pair gets one finding, listing its paths.
+- **R6** names the crawlers a CDN-managed block *blocks* (its `Allow: /` decides many verdicts too, which is not news) and lists each `Content-Signal` line.
+- **Amzn-SearchBot** keeps the plain RFC 9309 verdict plus a note on Amazon's different reading.
+- **Text formatting lives in `src/core/report/`** as a pure function, as the layout says.
