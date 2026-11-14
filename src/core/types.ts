@@ -22,6 +22,18 @@ export interface BotRecord {
   verified: string | null;
   /** Anything a reader needs to interpret the purpose, such as a second use. */
   note?: string;
+  /** Page-level controls the operator documents honouring; null when it documents none. */
+  pageControls: PageControls | null;
+}
+
+export interface PageControls {
+  /** Whether X-Robots-Tag is honoured. */
+  header: boolean;
+  /** Lower-cased meta names honoured, e.g. "robots", "googlebot". */
+  metaNames: string[];
+  /** Directives honoured: noindex, none, nosnippet, max-snippet. */
+  directives: string[];
+  source: string;
 }
 
 export type Severity = "error" | "warning" | "info";

@@ -3,10 +3,12 @@ import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { BOTS } from "./core/registry.js";
+import { notMeasured } from "./core/report/build.js";
+import { auditMarkdown, auditText } from "./core/report/format.js";
 import { robotsText } from "./core/report/robots-text.js";
 import type { BotRecord } from "./core/types.js";
 import { createFetcher, type Fetcher } from "./net/fetcher.js";
-import { InputError, runRobots } from "./runner.js";
+import { InputError, runAudit, runRobots } from "./runner.js";
 
 export interface CliResult {
   code: number;
@@ -26,12 +28,14 @@ export function version(): string {
 const USAGE = `Usage: botpolicy <command> [options]
 
 Commands:
+  audit <url>            What each crawler can reach: robots.txt and page checks
   robots <url or file>   robots.txt verdicts per crawler, with the deciding line
   bots                   List the crawler registry with sources
 
 Options:
-  --path <path>   Path to check (repeatable; default "/") (robots)
-  --json          Machine-readable output
+  --path <path>   Path to check (repeatable; default "/")
+  --format <f>    text, markdown or json (audit; default text)
+  --json          Machine-readable output (same as --format json)
   -v, --version   Print the version
   -h, --help      Print this help
 `;
@@ -75,6 +79,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
         help: { type: "boolean", short: "h" },
         json: { type: "boolean" },
         path: { type: "string", multiple: true },
+        format: { type: "string" },
       },
       allowPositionals: true,
     });
@@ -94,6 +99,23 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
         stdout: values.json ? JSON.stringify(BOTS, null, 2) + "\n" : formatBots(BOTS),
         stderr: "",
       };
+    case "audit": {
+      if (rest.length !== 1) return bad("audit takes one URL");
+      const format = values.json ? "json" : (values.format ?? "text");
+      if (!["text", "markdown", "json"].includes(format)) return bad(`unknown format '${format}'`);
+      try {
+        const report = await runAudit(rest[0]!, values.path ?? ["/"], {
+          fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
+        }, { version: version() });
+        const stdout =
+          format === "json" ? JSON.stringify(report, null, 2) + "\n" :
+          format === "markdown" ? auditMarkdown(report, BOTS) : auditText(report, BOTS);
+        return { code: notMeasured(report) ? EXIT.notMeasured : EXIT.ok, stdout, stderr: "" };
+      } catch (error) {
+        if (error instanceof InputError) return bad(error.message);
+        throw error;
+      }
+    }
     case "robots": {
       if (rest.length !== 1) return bad("robots takes one URL or file");
       const paths = values.path ?? ["/"];

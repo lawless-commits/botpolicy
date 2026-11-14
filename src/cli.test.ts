@@ -77,3 +77,15 @@ describe("cli robots", () => {
     expect((await run(["robots", fixture("training-only.txt"), "--path", "blog"])).code).toBe(2);
   });
 });
+
+describe("cli audit", () => {
+  it("exits 2 on a bad format", async () => {
+    expect((await run(["audit", "https://example.com", "--format", "pdf"])).code).toBe(2);
+  });
+
+  it("exits 3 and says not measured when the site cannot be reached", async () => {
+    const result = await run(["audit", "http://127.0.0.1:9/"]);
+    expect(result.code).toBe(3);
+    expect(result.stdout).toContain("NOT MEASURED");
+  });
+});
