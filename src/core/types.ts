@@ -23,3 +23,18 @@ export interface BotRecord {
   /** Anything a reader needs to interpret the purpose, such as a second use. */
   note?: string;
 }
+
+export type Severity = "error" | "warning" | "info";
+
+/** One observation from a check, with the crawlers and lines it concerns. */
+export interface Finding {
+  /** Check ID from the catalogue, e.g. "R3". */
+  check: string;
+  layer: "robots" | "page" | "edge" | "info";
+  severity: Severity;
+  bots: string[];
+  path?: string;
+  /** robots.txt line numbers the finding points at. */
+  lines?: number[];
+  message: string;
+}
