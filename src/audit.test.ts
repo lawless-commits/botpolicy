@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { startSite, type FixtureSite } from "../fixtures/server.mjs";
+import { policyJsonSchema } from "./core/policy/schema.js";
 import { reportJsonSchema, ReportSchema, type Report } from "./core/report/schema.js";
 import { createFetcher } from "./net/fetcher.js";
 import { InputError, runAudit } from "./runner.js";
@@ -94,5 +95,10 @@ describe("report schema", () => {
   it("matches the committed schema/report.json", () => {
     const committed = JSON.parse(readFileSync(new URL("../schema/report.json", import.meta.url), "utf8"));
     expect(committed).toEqual(JSON.parse(JSON.stringify(reportJsonSchema())));
+  });
+
+  it("matches the committed schema/policy.json", () => {
+    const committed = JSON.parse(readFileSync(new URL("../schema/policy.json", import.meta.url), "utf8"));
+    expect(committed).toEqual(JSON.parse(JSON.stringify(policyJsonSchema())));
   });
 });

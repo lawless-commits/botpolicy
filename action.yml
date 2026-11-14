@@ -1,0 +1,63 @@
+name: botpolicy
+description: Check what each AI crawler can reach on a site against botpolicy.json, and fail when the site drifts from it.
+author: lawless-commits
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  url:
+    description: URL to check, such as a deploy preview. Defaults to the site in the policy file.
+    required: false
+    default: ""
+  policy:
+    description: Path to the policy file.
+    required: false
+    default: botpolicy.json
+
+outputs:
+  status:
+    description: pass, fail, not-measured or error.
+    value: ${{ steps.test.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    # Until 1.0 the Action builds the CLI from its own checkout (docs/decisions.md).
+    - name: Build botpolicy
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npx --yes pnpm@12.18.0 install --frozen-lockfile
+        npx --yes pnpm@12.18.0 build
+
+    - name: Check the policy
+      id: test
+      shell: bash
+      env:
+        BOTPOLICY_URL: ${{ inputs.url }}
+        BOTPOLICY_POLICY: ${{ inputs.policy }}
+      run: |
+        out="$RUNNER_TEMP/botpolicy-report.md"
+        set +e
+        if [ -n "$BOTPOLICY_URL" ]; then
+          node "$GITHUB_ACTION_PATH/dist/cli.js" test "$BOTPOLICY_URL" --policy "$BOTPOLICY_POLICY" --format markdown --annotate > "$out"
+        else
+          node "$GITHUB_ACTION_PATH/dist/cli.js" test --policy "$BOTPOLICY_POLICY" --format markdown --annotate > "$out"
+        fi
+        code=$?
+        set -e
+        grep -v '^::error' "$out" >> "$GITHUB_STEP_SUMMARY" || true
+        grep '^::error' "$out" || true
+        case $code in
+          0) status=pass ;;
+          1) status=fail ;;
+          3) status=not-measured ;;
+          *) status=error ;;
+        esac
+        echo "status=$status" >> "$GITHUB_OUTPUT"
+        exit $code

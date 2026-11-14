@@ -451,6 +451,119 @@
         ],
         "additionalProperties": false
       }
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pass",
+            "fail",
+            "not-measured"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "token": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "rule": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "expected": {
+                "type": "string",
+                "enum": [
+                  "allowed",
+                  "blocked",
+                  "restricted",
+                  "reachable"
+                ]
+              },
+              "actual": {
+                "type": "string",
+                "enum": [
+                  "allowed",
+                  "blocked",
+                  "restricted",
+                  "not-measured"
+                ]
+              },
+              "ok": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "token",
+              "path",
+              "rule",
+              "expected",
+              "actual",
+              "ok",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "pageChecks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "requirement": {
+                "type": "string",
+                "enum": [
+                  "minTextWithoutJs",
+                  "requireJsonLd"
+                ]
+              },
+              "ok": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "requirement",
+              "ok",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "file",
+        "status",
+        "checks",
+        "pageChecks"
+      ],
+      "additionalProperties": false
     }
   },
   "required": [
