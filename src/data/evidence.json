@@ -1,0 +1,114 @@
+{
+  "R1": {
+    "title": "robots.txt fetch status",
+    "level": "documented",
+    "source": "https://www.rfc-editor.org/rfc/rfc9309.html#section-2.3.1",
+    "sourceName": "RFC 9309, section 2.3.1",
+    "checked": "2026-11-14",
+    "basis": "4xx means a crawler may access any resource; 5xx means it must assume complete disallow."
+  },
+  "R2": {
+    "title": "Verdict per crawler and path, with the deciding line",
+    "level": "documented",
+    "source": "https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.2",
+    "sourceName": "RFC 9309, section 2.2.2",
+    "checked": "2026-11-14",
+    "basis": "The most specific match, by octets, wins; an equivalent allow should win."
+  },
+  "R3": {
+    "title": "A crawler's own group drops the * rules",
+    "level": "documented",
+    "source": "https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.1",
+    "sourceName": "RFC 9309, section 2.2.1",
+    "checked": "2026-11-14",
+    "basis": "A crawler obeys the group matching its token and uses * only if none matches."
+  },
+  "R4": {
+    "title": "Rules aimed at retired tokens",
+    "level": "unproven",
+    "source": "https://support.claude.com/en/articles/8896518",
+    "sourceName": "Anthropic crawler help page",
+    "checked": "2026-11-14",
+    "basis": "The page does not mention anthropic-ai or Claude-Web, so nothing documents them as retired. Carries no weight."
+  },
+  "R5": {
+    "title": "Search and training siblings handled differently",
+    "level": "documented",
+    "source": "https://developers.openai.com/api/docs/bots",
+    "sourceName": "OpenAI crawler documentation (and the other operators' pages in bots.json)",
+    "checked": "2026-11-14",
+    "basis": "Operators document separate tokens for training, search and user fetches, each controlled on its own."
+  },
+  "R6": {
+    "title": "CDN-managed blocks and Content-Signal lines",
+    "level": "documented",
+    "source": "https://developers.cloudflare.com/bots/additional-configurations/managed-robots-txt/",
+    "sourceName": "Cloudflare managed robots.txt documentation (updated 2026-11-02)",
+    "checked": "2026-11-14",
+    "basis": "Cloudflare prepends managed directives and a Content-Signal policy to the site's robots.txt."
+  },
+  "R7": {
+    "title": "Sitemap declared and reachable",
+    "level": "documented",
+    "source": "https://www.rfc-editor.org/rfc/rfc9309.html#section-2.2.4",
+    "sourceName": "RFC 9309, section 2.2.4",
+    "checked": "2026-11-14",
+    "basis": "Crawlers may interpret records outside the protocol, such as Sitemap."
+  },
+  "P1": {
+    "title": "X-Robots-Tag header",
+    "level": "documented",
+    "source": "https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag",
+    "sourceName": "Google Search Central: robots meta tag and X-Robots-Tag",
+    "checked": "2026-11-14",
+    "basis": "Google honours X-Robots-Tag, including crawler-scoped values. Apple and Amazon document page controls too (see bots.json)."
+  },
+  "P2": {
+    "title": "Robots meta tags and snippet controls",
+    "level": "documented",
+    "source": "https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag",
+    "sourceName": "Google Search Central: robots meta tag and X-Robots-Tag",
+    "checked": "2026-11-14",
+    "basis": "Google honours noindex, nosnippet, max-snippet and data-nosnippet. In meta names it honours only googlebot and googlebot-news."
+  },
+  "P3": {
+    "title": "Status, redirects and canonical",
+    "level": "documented",
+    "source": "https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls",
+    "sourceName": "Google Search Central: canonical URLs",
+    "checked": "2026-11-14",
+    "basis": "rel=canonical in HTML or the Link header is a strong signal of the preferred URL."
+  },
+  "P4": {
+    "title": "Readable text without JavaScript",
+    "level": "measured",
+    "source": "https://vercel.com/blog/the-rise-of-the-ai-crawler",
+    "sourceName": "Vercel and MERJ, The rise of the AI crawler (2024-12-17)",
+    "checked": "2026-11-14",
+    "basis": "Server-log study: none of the major AI crawlers measured, including GPTBot and ClaudeBot, rendered JavaScript. Data from 2024."
+  },
+  "P5": {
+    "title": "JSON-LD parses and declares a type",
+    "level": "documented",
+    "source": "https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data",
+    "sourceName": "Google Search Central: structured data",
+    "checked": "2026-11-14",
+    "basis": "Google recommends JSON-LD for structured data. No AI crawler operator documents using it."
+  },
+  "E1": {
+    "title": "Response to each crawler's user agent against the baseline",
+    "level": "measured",
+    "source": "https://ppc.land/cloudflare-drops-ai-opt-outs-from-118-sites-robots-txt-hasdata-finds/",
+    "sourceName": "PPC Land on the HasData study (2026-10-08)",
+    "checked": "2026-11-14",
+    "basis": "234 of 592 sites that disallow GPTBot still served it a page; 178 blocked it at the firewall while robots.txt said nothing. Secondary coverage of a vendor study using datacenter IPs."
+  },
+  "I1": {
+    "title": "llms.txt present",
+    "level": "unproven",
+    "source": "https://letsdatascience.com/news/ahrefs-finds-97-of-llmstxt-files-receive-no-requests-fc471b83",
+    "sourceName": "Let's Data Science on an Ahrefs study (2026-06-16)",
+    "checked": "2026-11-14",
+    "basis": "97% of llms.txt files received no requests in May 2026. Reported for information; carries no weight."
+  }
+}
