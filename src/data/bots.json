@@ -8,7 +8,8 @@
     "obeysRobotsQuote": null,
     "isCrawler": true,
     "docsUrl": "https://developers.openai.com/api/docs/bots",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "OAI-SearchBot",
@@ -19,7 +20,8 @@
     "obeysRobotsQuote": null,
     "isCrawler": true,
     "docsUrl": "https://developers.openai.com/api/docs/bots",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "ChatGPT-User",
@@ -30,7 +32,8 @@
     "obeysRobotsQuote": "Because these actions are initiated by a user, robots.txt rules may not apply.",
     "isCrawler": true,
     "docsUrl": "https://developers.openai.com/api/docs/bots",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "OAI-AdsBot",
@@ -42,7 +45,8 @@
     "isCrawler": true,
     "docsUrl": "https://developers.openai.com/api/docs/bots",
     "verified": "2026-11-14",
-    "note": "Visits only pages submitted as ads, to validate them."
+    "note": "Visits only pages submitted as ads, to validate them.",
+    "pageControls": null
   },
   {
     "token": "ClaudeBot",
@@ -54,7 +58,8 @@
     "isCrawler": true,
     "docsUrl": "https://support.claude.com/en/articles/8896518",
     "verified": "2026-11-14",
-    "note": "The operator publishes no full user-agent string."
+    "note": "The operator publishes no full user-agent string.",
+    "pageControls": null
   },
   {
     "token": "Claude-SearchBot",
@@ -66,7 +71,8 @@
     "isCrawler": true,
     "docsUrl": "https://support.claude.com/en/articles/8896518",
     "verified": "2026-11-14",
-    "note": "The operator publishes no full user-agent string."
+    "note": "The operator publishes no full user-agent string.",
+    "pageControls": null
   },
   {
     "token": "Claude-User",
@@ -78,7 +84,8 @@
     "isCrawler": true,
     "docsUrl": "https://support.claude.com/en/articles/8896518",
     "verified": "2026-11-14",
-    "note": "The operator publishes no full user-agent string."
+    "note": "The operator publishes no full user-agent string.",
+    "pageControls": null
   },
   {
     "token": "PerplexityBot",
@@ -89,7 +96,8 @@
     "obeysRobotsQuote": null,
     "isCrawler": true,
     "docsUrl": "https://docs.perplexity.ai/guides/bots",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "Perplexity-User",
@@ -100,7 +108,8 @@
     "obeysRobotsQuote": "Since a user requested the fetch, this fetcher generally ignores robots.txt rules.",
     "isCrawler": true,
     "docsUrl": "https://docs.perplexity.ai/guides/bots",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "Googlebot",
@@ -112,7 +121,21 @@
     "isCrawler": true,
     "docsUrl": "https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers",
     "verified": "2026-11-14",
-    "note": "Also feeds AI Overviews and AI Mode; Google-Extended does not control those."
+    "note": "Also feeds AI Overviews and AI Mode; Google-Extended does not control those.",
+    "pageControls": {
+      "header": true,
+      "metaNames": [
+        "robots",
+        "googlebot"
+      ],
+      "directives": [
+        "noindex",
+        "none",
+        "nosnippet",
+        "max-snippet"
+      ],
+      "source": "https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag"
+    }
   },
   {
     "token": "Google-Extended",
@@ -124,7 +147,8 @@
     "isCrawler": false,
     "docsUrl": "https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers",
     "verified": "2026-11-14",
-    "note": "A robots.txt control for Gemini training and grounding. It does not affect Google Search."
+    "note": "A robots.txt control for Gemini training and grounding. It does not affect Google Search.",
+    "pageControls": null
   },
   {
     "token": "Applebot",
@@ -136,7 +160,20 @@
     "isCrawler": true,
     "docsUrl": "https://support.apple.com/en-us/119829",
     "verified": "2026-11-14",
-    "note": "Apple says Applebot data may also train its foundation models unless Applebot-Extended is disallowed."
+    "note": "Apple says Applebot data may also train its foundation models unless Applebot-Extended is disallowed.",
+    "pageControls": {
+      "header": true,
+      "metaNames": [
+        "robots",
+        "applebot"
+      ],
+      "directives": [
+        "noindex",
+        "none",
+        "nosnippet"
+      ],
+      "source": "https://support.apple.com/en-us/119829"
+    }
   },
   {
     "token": "Applebot-Extended",
@@ -148,7 +185,8 @@
     "isCrawler": false,
     "docsUrl": "https://support.apple.com/en-us/119829",
     "verified": "2026-11-14",
-    "note": "A robots.txt control for Apple model training. It does not affect Apple search."
+    "note": "A robots.txt control for Apple model training. It does not affect Apple search.",
+    "pageControls": null
   },
   {
     "token": "CCBot",
@@ -160,7 +198,8 @@
     "isCrawler": true,
     "docsUrl": "https://commoncrawl.org/ccbot",
     "verified": "2026-11-14",
-    "note": "Builds an open dataset that others widely use for training."
+    "note": "Builds an open dataset that others widely use for training.",
+    "pageControls": null
   },
   {
     "token": "Meta-ExternalAgent",
@@ -172,7 +211,8 @@
     "isCrawler": true,
     "docsUrl": "https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/",
     "verified": "2026-11-14",
-    "note": "Meta says it is also used to index content for its products. The user agent is the log form Meta shows; its link is relative on the page."
+    "note": "Meta says it is also used to index content for its products. The user agent is the log form Meta shows; its link is relative on the page.",
+    "pageControls": null
   },
   {
     "token": "Meta-ExternalFetcher",
@@ -184,7 +224,8 @@
     "isCrawler": true,
     "docsUrl": "https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/",
     "verified": "2026-11-14",
-    "note": "The user agent is the log form Meta shows; its link is relative on the page."
+    "note": "The user agent is the log form Meta shows; its link is relative on the page.",
+    "pageControls": null
   },
   {
     "token": "Amazonbot",
@@ -196,7 +237,18 @@
     "isCrawler": true,
     "docsUrl": "https://developer.amazon.com/amazonbot",
     "verified": "2026-11-14",
-    "note": "Amazon says it is used to improve its products and may train its AI models."
+    "note": "Amazon says it is used to improve its products and may train its AI models.",
+    "pageControls": {
+      "header": false,
+      "metaNames": [
+        "robots"
+      ],
+      "directives": [
+        "noindex",
+        "none"
+      ],
+      "source": "https://developer.amazon.com/amazonbot"
+    }
   },
   {
     "token": "Amzn-SearchBot",
@@ -208,7 +260,8 @@
     "isCrawler": true,
     "docsUrl": "https://developer.amazon.com/amazonbot",
     "verified": "2026-11-14",
-    "note": "When not named, it follows the rules given to other search crawlers, so a plain robots.txt reading may not match it."
+    "note": "When not named, it follows the rules given to other search crawlers, so a plain robots.txt reading may not match it.",
+    "pageControls": null
   },
   {
     "token": "Amzn-User",
@@ -219,7 +272,8 @@
     "obeysRobotsQuote": "Because actions taken by Amzn-User can be initiated by a user, it may not follow all robots.txt directives.",
     "isCrawler": true,
     "docsUrl": "https://developer.amazon.com/amazonbot",
-    "verified": "2026-11-14"
+    "verified": "2026-11-14",
+    "pageControls": null
   },
   {
     "token": "Bingbot",
@@ -231,6 +285,7 @@
     "isCrawler": true,
     "docsUrl": "https://www.bing.com/webmasters/help/which-crawlers-does-bing-use-8c184ec0",
     "verified": null,
-    "note": "Unverified: the operator page renders only in a browser and could not be read on 2026-11-14."
+    "note": "Unverified: the operator page renders only in a browser and could not be read on 2026-11-14.",
+    "pageControls": null
   }
 ]
