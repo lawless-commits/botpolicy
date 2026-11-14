@@ -142,3 +142,16 @@ Recommended by Claude and accepted by the owner's standing instruction.
 - **The report gains an optional `policy` section.** This is an addition, so it stays at schema version 1. `schema/policy.json` is generated beside `schema/report.json`, and both are test-guarded.
 - **The Action is composite.** It builds from its own checkout (decision 5), passes inputs through environment variables (no injection), writes Markdown to the job summary, prints `::error` annotations for broken rules, exposes `status`, and exits with the CLI's code. It runs `actions/setup-node` with Node 22, which also sets the Node version for later steps in the job; this is noted for the README.
 - **Examples** are in `fixtures/policies/`: search in and training out, open and readable with page requirements, and path exceptions.
+
+## Phase 4, the edge probe (Nov 14, 2026)
+
+Recommended by Claude and accepted by the owner's standing instruction. The owner asked for Phase 4 work to go ahead while the Phase 3 demo waits on the Netlify setup.
+
+- **Who is probed:** every crawler with `isCrawler` and a published user agent. Control tokens are never sent. Anthropic's three crawlers and Bingbot have no published string, so they are reported as "not probed" rather than given an invented one.
+- **Placeholders:** `W.X.Y.Z` in an operator's string becomes `131.0.0.0`, the Chrome version in OpenAI's own example. This is the only change made to a published string.
+- **Classes:** checked in this order against the baseline (our own user agent, same path). Not measured: either request failed, or the baseline was not 2xx. Challenged: a `cf-mitigated: challenge` header or a known challenge or CAPTCHA page, at any status. Denied: a non-2xx status where the baseline got 2xx. Different: redirected elsewhere, a different `<title>`, or under half the baseline's readable text. Served: anything else.
+- **In the verdict:** denied or challenged makes a crawler "blocked", decided by "edge", unless robots.txt already blocked it. Different and not-measured probes add a note and leave the verdict alone. A robots.txt block that the edge does not enforce stays "blocked", with a note and an E1 information finding.
+- **Simulated everywhere:** each edge result has `simulated: true`, the report has a `probe` section with the IP-verification caveat, and the text and Markdown say "(simulated)" on every edge verdict.
+- **Manners:** one probe request a second. Requests are counted before any is sent, and an over-budget plan exits 2 with "Probe fewer crawlers with --bots, or check fewer paths". `--bots` applies only with `--probe`. A default probe of one path is 18 requests at most.
+- **Schema:** `decidedBy` gains `"edge"`, and verdicts gain `edge`. The report gains `probe`. Pre-1.0, so it stays at version 1.
+- **The Action** gains `probe` and `bots` inputs, off by default.

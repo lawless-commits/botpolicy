@@ -63,8 +63,13 @@ export interface FetcherOptions {
   budget?: number;
 }
 
+export interface FetchOptions {
+  /** Overrides the fetcher's user agent for this request only (the probe). */
+  userAgent?: string;
+}
+
 export interface Fetcher {
-  fetch(url: string): Promise<FetchResult>;
+  fetch(url: string, options?: FetchOptions): Promise<FetchResult>;
   used(): number;
   readonly limits: { timeoutMs: number; maxBytes: number; maxRedirects: number; budget: number };
 }
@@ -145,7 +150,7 @@ export function createFetcher(options: FetcherOptions): Fetcher {
     return addresses;
   }
 
-  function requestOnce(url: URL, checked: LookupAddress[], signal: AbortSignal): Promise<{ res: IncomingMessage; body?: string }> {
+  function requestOnce(url: URL, checked: LookupAddress[], signal: AbortSignal, userAgent: string): Promise<{ res: IncomingMessage; body?: string }> {
     return new Promise((resolvePromise, reject) => {
       const transport = url.protocol === "https:" ? https : http;
       // autoSelectFamily is a socket option Node passes through; @types/node 22 omits it here.
@@ -153,7 +158,7 @@ export function createFetcher(options: FetcherOptions): Fetcher {
         method: "GET",
         agent: false,
         headers: {
-          "user-agent": options.userAgent,
+          "user-agent": userAgent,
           accept: "*/*",
           "accept-encoding": "gzip, deflate, br",
         },
@@ -216,7 +221,8 @@ export function createFetcher(options: FetcherOptions): Fetcher {
     });
   }
 
-  async function fetch(input: string): Promise<FetchResult> {
+  async function fetch(input: string, perRequest: FetchOptions = {}): Promise<FetchResult> {
+    const userAgent = perRequest.userAgent ?? options.userAgent;
     const redirects: string[] = [];
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), limits.timeoutMs);
@@ -237,7 +243,7 @@ export function createFetcher(options: FetcherOptions): Fetcher {
           throw new FetchError("budget-exhausted", `the run's budget of ${limits.budget} requests is spent`);
         }
         used++;
-        const { res, body } = await requestOnce(url, checked, controller.signal);
+        const { res, body } = await requestOnce(url, checked, controller.signal, userAgent);
         if (body === undefined) {
           if (redirects.length >= limits.maxRedirects) {
             throw new FetchError("too-many-redirects", `more than ${limits.maxRedirects} redirects`);

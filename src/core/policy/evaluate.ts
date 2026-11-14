@@ -49,6 +49,7 @@ function describe(v: Report["verdicts"][number]): string {
     return `robots.txt line ${v.robots.line}: ${v.robots.ruleText}${v.robots.managed ? ` [${v.robots.managed}]` : ""}`;
   }
   if (v.decidedBy === "robots") return "robots.txt could not be measured";
+  if (v.decidedBy === "edge") return `the edge (simulated): it ${v.edge?.reason ?? "was refused"}`;
   if (v.decidedBy === "page") return v.verdict === "not-measured" ? "the page could not be measured" : `the page sets ${v.pageControls.join(", ")}`;
   if (v.robots.line !== null) return `robots.txt line ${v.robots.line}: ${v.robots.ruleText}`;
   return "nothing limits it";

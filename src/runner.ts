@@ -7,7 +7,9 @@ import { parsePolicy, policyPaths, PolicyError, type Policy } from "./core/polic
 import { buildReport } from "./core/report/build.js";
 import type { Report } from "./core/report/schema.js";
 import { analyseRobots, type RobotsInput, type RobotsReport } from "./core/robots/checks.js";
-import { combine } from "./core/verdict.js";
+import { probeUserAgent } from "./core/probe/agents.js";
+import { classify, type ProbeResponse, type ProbeResult } from "./core/probe/classify.js";
+import { combine, edgeFindings } from "./core/verdict.js";
 import type { Finding } from "./core/types.js";
 import { BOTS } from "./core/registry.js";
 import type { BotRecord } from "./core/types.js";
@@ -67,6 +69,33 @@ export interface AuditOptions {
   version: string;
   now?: () => Date;
   minText?: number;
+  /** Request each path again as each crawler (opt-in, simulated). */
+  probe?: boolean;
+  /** Tokens to probe; default every crawler with a published user agent. */
+  probeBots?: string[];
+  /** Waits between probe requests; replaced in tests. */
+  sleep?: (ms: number) => Promise<void>;
+}
+
+/** One probe request a second, as CLAUDE.md requires. */
+export const PROBE_INTERVAL_MS = 1000;
+
+function toProbeResponse(result: FetchResult): ProbeResponse {
+  return result.ok
+    ? { ok: true, status: result.status, headers: result.headers, body: result.body, finalUrl: result.finalUrl }
+    : { ok: false, error: result.error, message: result.message };
+}
+
+/** The crawlers a probe would request as. Unknown tokens are bad input. */
+export function selectProbeBots(bots: readonly BotRecord[], tokens?: string[]): BotRecord[] {
+  if (tokens) {
+    for (const t of tokens) {
+      if (!bots.some((b) => b.token.toLowerCase() === t.toLowerCase())) throw new InputError(`unknown crawler '${t}'; run botpolicy bots to see them`);
+    }
+  }
+  return bots.filter(
+    (b) => probeUserAgent(b) !== null && (!tokens || tokens.some((t) => t.toLowerCase() === b.token.toLowerCase())),
+  );
 }
 
 function toPageInput(url: string, result: FetchResult): PageInput {
@@ -91,18 +120,31 @@ export async function runAudit(target: string, paths: string[], deps: RunnerDeps
   for (const path of unique) {
     if (!path.startsWith("/")) throw new InputError(`paths must start with "/": ${path}`);
   }
-  const planned = 1 + unique.length + 2; // robots.txt, each path, one sitemap, llms.txt
+  const bots = deps.bots ?? BOTS;
+  const probeBots = options.probe ? selectProbeBots(bots, options.probeBots) : [];
+  // robots.txt, each path, one sitemap, llms.txt, then each probed crawler on each path.
+  const planned = 1 + unique.length + 2 + probeBots.length * unique.length;
   const budget = deps.fetcher.limits.budget - deps.fetcher.used();
   if (planned > budget) {
-    throw new InputError(`this audit needs up to ${planned} requests but the budget is ${budget}. Check fewer paths.`);
+    throw new InputError(
+      `this audit needs up to ${planned} requests but the budget is ${budget}. ` +
+        (probeBots.length ? `Probe fewer crawlers with --bots, or check fewer paths.` : `Check fewer paths.`),
+    );
   }
-  const bots = deps.bots ?? BOTS;
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const probes: Record<string, Record<string, ProbeResult>> = {};
 
   const robots = await runRobots(origin.origin, unique, deps);
   const pages: Record<string, PageReport> = {};
   for (const path of unique) {
     const url = new URL(path, origin).href;
-    pages[path] = analysePage(toPageInput(url, await deps.fetcher.fetch(url)), { minText: options.minText });
+    const baseline = await deps.fetcher.fetch(url);
+    pages[path] = analysePage(toPageInput(url, baseline), { minText: options.minText });
+    for (const bot of probeBots) {
+      await sleep(PROBE_INTERVAL_MS);
+      const response = await deps.fetcher.fetch(url, { userAgent: probeUserAgent(bot)! });
+      (probes[path] ??= {})[bot.token] = classify(toProbeResponse(baseline), toProbeResponse(response));
+    }
   }
 
   const extra: Finding[] = [];
@@ -127,6 +169,7 @@ export async function runAudit(target: string, paths: string[], deps: RunnerDeps
     message: present ? "llms.txt is present." : "No llms.txt.",
   });
 
+  const verdicts = combine(robots, pages, bots, { enabled: !!options.probe, results: probes });
   return buildReport({
     target: origin.href,
     version: options.version,
@@ -134,8 +177,9 @@ export async function runAudit(target: string, paths: string[], deps: RunnerDeps
     requests: deps.fetcher.used(),
     robots,
     pages,
-    verdicts: combine(robots, pages, bots),
-    extraFindings: extra,
+    verdicts,
+    extraFindings: [...extra, ...edgeFindings(verdicts)],
+    probed: !!options.probe,
   });
 }
 
