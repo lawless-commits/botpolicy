@@ -101,7 +101,7 @@ describe("R4: retired tokens", () => {
     const found = checks(report, "R4");
     expect(found).toHaveLength(1);
     expect(found[0]).toMatchObject({ severity: "info", lines: [1, 4] });
-    expect(found[0]!.message).toMatch(/unproven/i);
+    expect(found[0]!.message).toMatch(/does not list/);
   });
 });
 

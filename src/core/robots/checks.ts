@@ -200,7 +200,7 @@ function retired(parsed: ParsedRobots): Finding[] {
   return [{
     check: "R4", layer: "robots", severity: "info", bots: [...new Set(agents.map((a) => a.raw))],
     lines: agents.map((a) => a.line),
-    message: `Rules name ${[...new Set(agents.map((a) => a.raw))].join(", ")}, which Anthropic's crawler page does not list. Unproven: carries no weight.`,
+    message: `Rules name ${[...new Set(agents.map((a) => a.raw))].join(", ")}, which Anthropic's crawler page does not list.`,
   }];
 }
 
