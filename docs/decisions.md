@@ -114,3 +114,17 @@ Every source was read on Nov 14, 2026.
 - **Google honours only `googlebot` and `googlebot-news` as meta tag names.** Apple and Amazon document their own page controls. A meta tag naming any other crawler is recorded but must carry no weight in a verdict.
 - **R4 and I1 are unproven** and carry no weight. `carriesWeight()` is the single place that decides this.
 - A test scans the source for every `check: "X1"` and fails if one has no evidence entry.
+
+## Phase 2, verdicts, reports and audit (Nov 14, 2026)
+
+Recommended by Claude and accepted by the owner's standing instruction.
+
+- **Verdict order:** robots.txt not measured, then robots.txt blocked, then page not measured (unreachable or non-2xx for our request), then page controls, then allowed. Control-only tokens take the robots verdict alone.
+- **A blocked verdict stays blocked for crawlers whose operator says robots.txt may not apply**, with the operator's sentence in a note.
+- **Page controls make a verdict "restricted" only where the operator documents honouring them.** That covers Googlebot (header, `robots`, `googlebot`; noindex, none, nosnippet, max-snippet) and Applebot (header, `robots`, `applebot`; noindex, none, nosnippet), from their operator pages. It also covers Amazonbot (`robots` meta; noindex, none), applied to Amazonbot only because the page lists it under Amazonbot. Kept in `bots.json` as `pageControls`. Everywhere else, the control appears as a note.
+- **`max-snippet:0` restricts; a positive limit does not.**
+- **Report schema version 1**, defined in zod 4.6.7 (no dependencies) and generated with `z.toJSONSchema` into `schema/report.json`. A test fails if the committed file drifts. Reports are checked with the zod schema itself rather than a separate JSON Schema validator, which would be another dependency.
+- **The time and version are passed into the report builder**, so the core stays pure and tests are repeatable.
+- **The audit plans its requests before sending:** robots.txt, each path, the first sitemap and `/llms.txt`. If that is over budget it exits 2 before any request. A sitemap that only hits the 2 MB cap counts as reachable.
+- **The audit exits 3 if any verdict is not measured.**
+- **The fixture server is plain JavaScript** in `fixtures/server.mjs`, with a type declaration, so it stays out of the package build. `{{origin}}` in fixture files becomes the server's own address.

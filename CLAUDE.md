@@ -15,6 +15,7 @@ Runtime dependencies: the MCP TypeScript SDK, zod, one HTML parser. CLI flags us
 - `pnpm typecheck`: `tsc --noEmit`, tests included
 - `pnpm test`: Vitest, one run
 - `pnpm run pack`: build, then write `botpolicy-<version>.tgz` (plain `pnpm pack` skips the build)
+- `pnpm schema`: regenerate `schema/report.json` from the zod schema (a test fails if it drifts)
 
 ## Layout
 - `src/core/`: pure functions with no network or disk access (`robots/`, `page/`, `probe/`, `policy/`, `report/`, `types.ts`)

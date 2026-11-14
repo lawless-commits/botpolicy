@@ -30,3 +30,17 @@ describe("bot registry", () => {
     expect(findBot("nope")).toBeUndefined();
   });
 });
+
+describe("page controls", () => {
+  it("are documented with a source wherever present", () => {
+    for (const bot of BOTS) {
+      if (bot.pageControls === null) continue;
+      expect(bot.pageControls.source).toMatch(/^https:\/\//);
+      expect(bot.pageControls.metaNames.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("are listed only for the crawlers whose operators document them", () => {
+    expect(BOTS.filter((b) => b.pageControls).map((b) => b.token)).toEqual(["Googlebot", "Applebot", "Amazonbot"]);
+  });
+});
