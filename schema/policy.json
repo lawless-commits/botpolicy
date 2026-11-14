@@ -16,8 +16,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "format": "starts_with",
-        "pattern": "^\\/.*"
+        "pattern": "^\\/"
       }
     },
     "rules": {
@@ -44,8 +43,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "format": "starts_with",
-              "pattern": "^\\/.*"
+              "pattern": "^\\/"
             }
           },
           "expect": {

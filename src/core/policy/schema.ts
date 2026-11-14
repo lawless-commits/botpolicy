@@ -5,7 +5,7 @@ import { BOTS } from "../registry.js";
 const PURPOSES = ["training", "search", "user-fetch", "other"] as const;
 const operators = () => [...new Set(BOTS.map((b) => b.operator.toLowerCase()))];
 
-const Path = z.string().startsWith("/", { message: 'paths must start with "/"' });
+const Path = z.string().regex(/^\//, { message: 'paths must start with "/"' });
 
 /** "*", "purpose:<purpose>", "operator:<operator>" or a list of crawler tokens. */
 const BotSelector = z.union([z.string(), z.array(z.string()).min(1)]).superRefine((value, ctx) => {
@@ -24,6 +24,8 @@ const BotSelector = z.union([z.string(), z.array(z.string()).min(1)]).superRefin
     fail('bots must be "*", "purpose:<purpose>", "operator:<operator>" or a list of crawler tokens');
   }
 });
+
+export { BotSelector as BotSelectorSchema };
 
 export const Expectation = z.enum(["allowed", "blocked", "restricted", "reachable"]);
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, realpathSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { BOTS } from "./core/registry.js";
@@ -10,6 +10,7 @@ import { robotsText } from "./core/report/robots-text.js";
 import type { BotRecord } from "./core/types.js";
 import { createFetcher, type Fetcher } from "./net/fetcher.js";
 import { InputError, runAudit, runInit, runRobots, runTest } from "./runner.js";
+import { userAgent, version } from "./version.js";
 
 export interface CliResult {
   code: number;
@@ -19,12 +20,7 @@ export interface CliResult {
 
 export const EXIT = { ok: 0, policyBroken: 1, badInput: 2, notMeasured: 3 } as const;
 
-export function version(): string {
-  const pkg: unknown = JSON.parse(
-    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-  );
-  return (pkg as { version: string }).version;
-}
+export { userAgent, version };
 
 const USAGE = `Usage: botpolicy <command> [options]
 
@@ -34,6 +30,7 @@ Commands:
   init <url>             Write botpolicy.json from what the site does today
   robots <url or file>   robots.txt verdicts per crawler, with the deciding line
   bots                   List the crawler registry with sources
+  mcp                    Start the read-only MCP server over stdio
 
 Options:
   --path <path>   Path to check (repeatable; default "/")
@@ -69,15 +66,14 @@ function formatBots(bots: readonly BotRecord[]): string {
   return [line(head), ...rows.map(line)].join("\n") + "\n";
 }
 
-export function userAgent(): string {
-  return `botpolicy/${version()} (+https://github.com/lawless-commits/botpolicy)`;
-}
 
 export interface CliDeps {
   fetcher?: Fetcher;
   /** Writes the policy file for init; replaced in tests. */
   writeFile?: (path: string, text: string) => void;
   exists?: (path: string) => boolean;
+  /** The report time; replaced in tests. */
+  now?: () => Date;
 }
 
 function render(report: Report, format: string): string {
@@ -134,7 +130,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
       try {
         const report = await runAudit(rest[0]!, values.path ?? ["/"], {
           fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
-        }, { version: version(), ...probeOptions });
+        }, { version: version(), now: deps.now, ...probeOptions });
         const stdout =
           format === "json" ? JSON.stringify(report, null, 2) + "\n" :
           format === "markdown" ? auditMarkdown(report, BOTS) : auditText(report, BOTS);
@@ -151,7 +147,7 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
       try {
         const report = await runTest(values.policy ?? "botpolicy.json", rest[0], {
           fetcher: deps.fetcher ?? createFetcher({ userAgent: userAgent() }),
-        }, { version: version(), ...probeOptions });
+        }, { version: version(), now: deps.now, ...probeOptions });
         const status = report.policy!.status;
         const code = status === "fail" ? EXIT.policyBroken : status === "not-measured" ? EXIT.notMeasured : EXIT.ok;
         return { code, stdout: render(report, format) + (values.annotate ? annotations(report) : ""), stderr: "" };
@@ -196,13 +192,17 @@ export async function run(argv: string[], deps: CliDeps = {}): Promise<CliResult
         throw error;
       }
     }
+    case "mcp":
+      return bad("mcp starts a server and must be run as its own process: botpolicy mcp");
     default:
       return bad(`unknown command '${command}'. Run botpolicy --help.`);
   }
 }
 
 const entry = process.argv[1];
-if (entry && realpathSync(entry) === fileURLToPath(import.meta.url)) {
+if (entry && realpathSync(entry) === fileURLToPath(import.meta.url) && process.argv[2] === "mcp" && process.argv.length === 3) {
+  void import("./mcp.js").then((m) => m.startStdio());
+} else if (entry && realpathSync(entry) === fileURLToPath(import.meta.url)) {
   run(process.argv.slice(2)).then(
     (result) => {
       process.stdout.write(result.stdout);
