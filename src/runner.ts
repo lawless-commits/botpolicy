@@ -1,6 +1,9 @@
 /** Turns a command into requests and core calls. The only layer that joins network or disk to the core. */
 import { readFile } from "node:fs/promises";
 import { analysePage, type PageInput, type PageReport } from "./core/page/analyse.js";
+import { draftPolicy } from "./core/policy/draft.js";
+import { evaluatePolicy } from "./core/policy/evaluate.js";
+import { parsePolicy, policyPaths, PolicyError, type Policy } from "./core/policy/schema.js";
 import { buildReport } from "./core/report/build.js";
 import type { Report } from "./core/report/schema.js";
 import { analyseRobots, type RobotsInput, type RobotsReport } from "./core/robots/checks.js";
@@ -134,4 +137,44 @@ export async function runAudit(target: string, paths: string[], deps: RunnerDeps
     verdicts: combine(robots, pages, bots),
     extraFindings: extra,
   });
+}
+
+/** Reads and validates a policy file. Any problem is bad input (exit 2). */
+export async function loadPolicy(file: string, read: (path: string) => Promise<string> = (p) => readFile(p, "utf8")): Promise<Policy> {
+  let text: string;
+  try {
+    text = await read(file);
+  } catch (error) {
+    throw new InputError(`cannot read ${file}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch (error) {
+    throw new InputError(`${file} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`);
+  }
+  try {
+    return parsePolicy(json);
+  } catch (error) {
+    if (error instanceof PolicyError) throw new InputError(`${file} is not a valid policy:\n${error.message}`);
+    throw error;
+  }
+}
+
+/** botpolicy test: audit the site (or another URL, such as a deploy preview) and check it against the policy. */
+export async function runTest(file: string, url: string | undefined, deps: RunnerDeps, options: AuditOptions): Promise<Report> {
+  const policy = await loadPolicy(file, deps.readFile);
+  const report = await runAudit(url ?? policy.site, policyPaths(policy), deps, {
+    ...options,
+    minText: policy.page?.minTextWithoutJs ?? options.minText,
+  });
+  report.policy = { file, ...evaluatePolicy(policy, report, deps.bots ?? BOTS) };
+  return report;
+}
+
+/** botpolicy init: audit the site and draft a policy that matches today's behaviour. */
+export async function runInit(url: string, paths: string[], deps: RunnerDeps, options: AuditOptions): Promise<{ report: Report; policy: Policy | null }> {
+  const report = await runAudit(url, paths, deps, options);
+  if (report.verdicts.some((v) => v.verdict === "not-measured")) return { report, policy: null };
+  return { report, policy: draftPolicy(report, [...new Set(paths)], deps.bots ?? BOTS) };
 }

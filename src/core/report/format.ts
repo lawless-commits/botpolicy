@@ -57,7 +57,38 @@ export function auditText(report: Report, bots: readonly BotRecord[]): string {
   const n = notes(report);
   if (n.length) out.push("", "Notes (*)", ...n.map((x) => `  ${x}`));
   if (report.findings.length) out.push("", "Findings", ...report.findings.map((f) => `  ${findingLine(f)}`));
+  const policy = policyLines(report);
+  if (policy.length) out.push("", policy[1]!, ...policy.slice(2).map((l) => `  ${l}`));
   return out.join("\n") + "\n";
+}
+
+const POLICY_STATUS = { pass: "PASS", fail: "FAIL", "not-measured": "NOT MEASURED" } as const;
+
+/** Policy results: failures first, then not measured, then a count of what held. */
+function policyLines(report: Report): string[] {
+  const p = report.policy;
+  if (!p) return [];
+  const all = [...p.checks, ...p.pageChecks];
+  const broken = all.filter((c) => c.ok === false);
+  const unmeasured = all.filter((c) => c.ok === null);
+  const held = all.length - broken.length - unmeasured.length;
+  return [
+    "",
+    `Policy ${p.file}: ${POLICY_STATUS[p.status]} (${held} held, ${broken.length} broken, ${unmeasured.length} not measured)`,
+    ...broken.map((c) => `BROKEN  ${c.reason}`),
+    ...unmeasured.map((c) => `NOT MEASURED  ${c.reason}`),
+  ];
+}
+
+/** GitHub Actions error annotations, one per broken expectation. */
+export function annotations(report: Report): string {
+  const p = report.policy;
+  if (!p) return "";
+  const esc = (s: string) => s.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  return [...p.checks, ...p.pageChecks]
+    .filter((c) => c.ok === false)
+    .map((c) => `::error title=botpolicy::${esc(c.reason)}\n`)
+    .join("");
 }
 
 const cell = (s: string) => s.replace(/\|/g, "\\|");
@@ -74,6 +105,11 @@ export function auditMarkdown(report: Report, bots: readonly BotRecord[]): strin
   if (report.findings.length) {
     out.push("", "## Findings", "");
     for (const f of report.findings) out.push(`- ${findingLine(f).replace(/^\[(\w+)\]/, "**$1**")} [source](${f.evidence.source})`);
+  }
+  const lines = policyLines(report);
+  if (lines.length) {
+    out.push("", `## ${lines[1]}`, "");
+    for (const l of lines.slice(2)) out.push(`- ${cell(l)}`);
   }
   return out.join("\n") + "\n";
 }
