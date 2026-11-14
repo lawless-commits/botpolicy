@@ -113,8 +113,11 @@ export function createFetcher(options: FetcherOptions): Fetcher {
   const resolve = options.resolve ?? ((host: string) => dns.lookup(host, { all: true, verbatim: true }));
   let used = 0;
 
-  /** Resolves and checks the target; returns the one address the socket must use. */
-  async function pinAddress(url: URL, signal: AbortSignal): Promise<LookupAddress> {
+  /**
+   * Resolves and checks the target. Returns every address, all of them checked;
+   * the socket may connect only to these, trying each in turn.
+   */
+  async function checkedAddresses(url: URL, signal: AbortSignal): Promise<LookupAddress[]> {
     const host = url.hostname.replace(/^\[|\]$/g, "");
     const port = Number(url.port || (url.protocol === "https:" ? 443 : 80));
     let addresses: LookupAddress[];
@@ -139,13 +142,14 @@ export function createFetcher(options: FetcherOptions): Fetcher {
     if (refused) {
       throw new FetchError("refused-address", `${host} resolves to ${refused.address}, which is not a public address`);
     }
-    return addresses[0]!;
+    return addresses;
   }
 
-  function requestOnce(url: URL, pinned: LookupAddress, signal: AbortSignal): Promise<{ res: IncomingMessage; body?: string }> {
+  function requestOnce(url: URL, checked: LookupAddress[], signal: AbortSignal): Promise<{ res: IncomingMessage; body?: string }> {
     return new Promise((resolvePromise, reject) => {
       const transport = url.protocol === "https:" ? https : http;
-      const req = transport.request(url, {
+      // autoSelectFamily is a socket option Node passes through; @types/node 22 omits it here.
+      const requestOptions: http.RequestOptions & { autoSelectFamily: boolean } = {
         method: "GET",
         agent: false,
         headers: {
@@ -153,15 +157,18 @@ export function createFetcher(options: FetcherOptions): Fetcher {
           accept: "*/*",
           "accept-encoding": "gzip, deflate, br",
         },
-        // Connect only to the address that was checked; no second lookup.
+        // Connect only to addresses that were checked; no second lookup. With
+        // autoSelectFamily, Node tries each in turn if a connection attempt fails.
+        autoSelectFamily: true,
         lookup: (_host, opts, callback) => {
           if ((opts as { all?: boolean }).all) {
-            (callback as (e: null, a: LookupAddress[]) => void)(null, [pinned]);
+            (callback as (e: null, a: LookupAddress[]) => void)(null, checked);
           } else {
-            (callback as (e: null, a: string, f: number) => void)(null, pinned.address, pinned.family);
+            (callback as (e: null, a: string, f: number) => void)(null, checked[0]!.address, checked[0]!.family);
           }
         },
-      });
+      };
+      const req = transport.request(url, requestOptions);
 
       let settled = false;
       const fail = (error: FetchError) => {
@@ -224,13 +231,13 @@ export function createFetcher(options: FetcherOptions): Fetcher {
         if (url.protocol !== "http:" && url.protocol !== "https:") {
           throw new FetchError("bad-url", `only http and https are fetched, not ${url.protocol}`);
         }
-        const pinned = await pinAddress(url, controller.signal);
+        const checked = await checkedAddresses(url, controller.signal);
         if (controller.signal.aborted) throw new FetchError("timeout", `no complete response within ${limits.timeoutMs} ms`);
         if (used >= limits.budget) {
           throw new FetchError("budget-exhausted", `the run's budget of ${limits.budget} requests is spent`);
         }
         used++;
-        const { res, body } = await requestOnce(url, pinned, controller.signal);
+        const { res, body } = await requestOnce(url, checked, controller.signal);
         if (body === undefined) {
           if (redirects.length >= limits.maxRedirects) {
             throw new FetchError("too-many-redirects", `more than ${limits.maxRedirects} redirects`);
